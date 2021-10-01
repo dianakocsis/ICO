@@ -237,14 +237,14 @@ describe("ICO contract", function () {
 
     it("Cannot move from phase Seed to Phase General", async function () {
       await ico.changePhase(1);
-      await expect(ico.changePhase(0)).to.be.revertedWith("MOVE_FOWRARD");
+      await expect(ico.changePhase(0)).to.be.revertedWith("MOVE_FORWARD");
     })
 
   })
 
-  describe("Release", function () {
+  describe("Withdraw", function () {
 
-    it("When owner switches to Phase Open, release tokens to contributors", async function () {
+    it("When owner switches to Phase Open, contributors can withdraw", async function () {
 
       spaceCoin.approve(ico.address, initialSupply);
 
@@ -257,6 +257,9 @@ describe("ICO contract", function () {
       });
 
       await ico.changePhase(2);
+
+      await ico.connect(addr1).withdraw();
+      await ico.connect(addr2).withdraw();
 
       expect(await spaceCoin.balanceOf(addr1.address)).to.equal('7500000000000000000');
       expect(await spaceCoin.balanceOf(addr2.address)).to.equal('7500000000000000000');

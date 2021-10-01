@@ -100,10 +100,10 @@ contract ICO {
 
     /** @dev Releases 5 tokens to 1 Ether to all the contributors
      */
-    function release() internal {
-        for (uint i = 0; i < contributors.length; i++) {
-            spcToken.transferFrom(owner, contributors[i], 5 * contributions[contributors[i]]);
-        }  
+    function withdraw() external {
+        if (phase == Phase.Open) {
+            spcToken.transferFrom(owner, msg.sender, 5 * contributions[msg.sender]);
+        }
     }
 
     /** @dev Owner can change the phase of the contract.
@@ -113,12 +113,8 @@ contract ICO {
      *   Owner can only move the phase forward.
      */
     function changePhase(Phase _phase) external onlyOwner {
-        require(_phase > phase, "MOVE_FOWRARD");
+        require(_phase > phase, "MOVE_FORWARD");
         phase = _phase;
-
-        if (phase == Phase.Open) {
-            release();
-        }
     }
 
     /**
