@@ -37,7 +37,7 @@ function App() {
       const signer = provider.getSigner();
       const contract = new ethers.Contract(icoAddress, ICO.abi, signer);
       try {
-        const transation = await contract.contribute({value: ethers.utils.parseEther(eths)});
+        const transation = await contract.contribute({nonce: 0, value: ethers.utils.parseEther(eths)});
         await transation.wait();
         alert(`${eths} ether successfully sent to ${icoAddress}`)
         console.log(`${eths} ether successfully sent to ${icoAddress}`);
