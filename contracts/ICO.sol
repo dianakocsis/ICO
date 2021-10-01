@@ -96,9 +96,8 @@ contract ICO {
      */
     function withdraw() external {
         require(contributions[msg.sender] > 0);
-        if (phase == Phase.Open) {
-            spcToken.transferFrom(owner, msg.sender, 5 * contributions[msg.sender]);
-        }
+        require(phase == Phase.Open, "NOT READY");
+        spcToken.transferFrom(owner, msg.sender, 5 * contributions[msg.sender]);
         contributions[msg.sender] = 0;
     }
 

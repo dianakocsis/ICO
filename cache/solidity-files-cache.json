@@ -72,8 +72,8 @@
       ]
     },
     "/Users/diana/solidity/optillistic/ICO/contracts/ICO.sol": {
-      "lastModificationDate": 1633131154418,
-      "contentHash": "8ae9a88bb1212e3dcc6cab907f294bdd",
+      "lastModificationDate": 1633131454050,
+      "contentHash": "0e9130fec81bbfdfd663c7d2c0054e28",
       "sourceName": "contracts/ICO.sol",
       "solcConfig": {
         "version": "0.8.0",
