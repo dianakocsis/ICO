@@ -15,10 +15,8 @@ contract ICO {
     bool public paused;
     address public owner;
     address public spcOwner;
-    address[] public contributors;
     mapping(address=>bool) whitelist; 
     mapping(address=>uint) contributions;
-    mapping(address=>bool) contributed;
     uint public total;
 
     modifier onlyOwner {
@@ -60,10 +58,6 @@ contract ICO {
 
         contributions[msg.sender] += msg.value;
         total += msg.value;
-        if (!contributed[msg.sender]) {
-            contributed[msg.sender] = true;
-            contributors.push(msg.sender);
-        }
     }
 
     /** @dev 
@@ -101,9 +95,11 @@ contract ICO {
     /** @dev Releases 5 tokens to 1 Ether to all the contributors
      */
     function withdraw() external {
+        require(contributions[msg.sender] > 0);
         if (phase == Phase.Open) {
             spcToken.transferFrom(owner, msg.sender, 5 * contributions[msg.sender]);
         }
+        contributions[msg.sender] = 0;
     }
 
     /** @dev Owner can change the phase of the contract.
