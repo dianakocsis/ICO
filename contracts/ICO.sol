@@ -15,8 +15,8 @@ contract ICO {
     bool public paused;
     address public owner;
     address public spcOwner;
-    address[] public whitelist; 
     address[] public contributors;
+    mapping(address=>bool) whitelist; 
     mapping(address=>uint) contributions;
     mapping(address=>bool) contributed;
     uint public total;
@@ -32,7 +32,9 @@ contract ICO {
      */
     constructor(address[] memory addrs, address _token) {
         owner = msg.sender;
-        whitelist = addrs;
+        for (uint i = 0; i < addrs.length; i++) {
+            whitelist[addrs[i]] = true;
+        }
         spcToken = IERC20(_token);
     }
 
@@ -64,24 +66,15 @@ contract ICO {
         }
     }
 
-    /** @dev Iterates through the whitelist and checks to see if caller is on the whitelist.
-     *       If not, the caller cannot contribute and contract will rever.
-     *
+    /** @dev 
      * Requirements:
      *
+     *   Contributor is on the whitelist
      *   Contribution is not over the contributor's limit.
      *   Contribution is not over the total limit in the seed phase.
      */
     function seed() internal {
-        for (uint i = 0; i < whitelist.length; i++) {
-            if (whitelist[i] == msg.sender) {
-                break;
-            }
-            if (i == whitelist.length - 1) {
-                revert("NOT_ON_WHITELIST");
-            }
-        }
-        
+        require(whitelist[msg.sender], "NOT_ON_WHITELIST");
         require(contributions[msg.sender] + msg.value <= 1500 ether, "MAX_IND_CONTRIBUTION");
         require(total + msg.value <= 15000 ether, "MAX_TOTAL_CONTRIBUTION");
     }
@@ -133,13 +126,6 @@ contract ICO {
      */
     function pause(bool _paused) external onlyOwner {
         paused = _paused;
-    }
-
-    /**
-     * @dev Returns addresses on the whitelist
-     */
-    function getWhitelist() external view onlyOwner returns (address[] memory ){
-        return whitelist;
     }
 
 }

@@ -31,12 +31,6 @@ describe("ICO contract", function () {
       expect(await ico.owner()).to.equal(owner.address);
     });
 
-    it("Should assign the correct whitelist", async function () {
-        const addresses = await ico.getWhitelist();
-        expect(addresses[0]).to.equal(addr1.address);
-        expect(addresses[1]).to.equal(addr2.address);
-
-    })
   })
 
   describe("ICO Paused", function () {
