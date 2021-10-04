@@ -88,6 +88,7 @@ contract ICO {
     /** @dev Releases 5 tokens to 1 Ether to the contributor
      */
     function open() internal {
+        require(total + msg.value <= 30000 ether, "MAX_TOTAL_CONTRIBUTION");
         uint tokenAmt = 5 * msg.value;
         spcToken.transferFrom(owner, msg.sender, tokenAmt);
     }
