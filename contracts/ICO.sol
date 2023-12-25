@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./SpaceCoin.sol";
 
 contract ICO {
 
@@ -16,24 +17,24 @@ contract ICO {
     address public owner;
     address public spcOwner;
     mapping(address=>bool) whitelist; 
+    mapping(address => bool) public allowList;
     mapping(address=>uint) contributions;
     uint public total;
+    IERC20 public immutable spaceCoin;
 
     modifier onlyOwner {
         require(msg.sender == owner, "NOT_OWNER");
         _;
     }
 
-    /** @dev Sets the owner of the contract, passes in the whitelist, and passes in 
-     *  the address of the token the contract will be interacting with
-     *
-     */
-    constructor(address[] memory addrs, address _token) {
-        owner = msg.sender;
-        for (uint i = 0; i < addrs.length; i++) {
-            whitelist[addrs[i]] = true;
+    /// @param _owner The owner of the contract
+    /// @param _allowList The list of addresses allowed to contribute
+    constructor(address _owner, SpaceCoin _spaceCoin, address[] memory _allowList) {
+        owner = _owner;
+        spaceCoin = _spaceCoin;
+        for (uint i = 0; i < _allowList.length; i++) {
+            allowList[_allowList[i]] = true;
         }
-        spcToken = IERC20(_token);
     }
 
     /** @dev Checks the phase state and adds the contribution to the specific contributor and total 
