@@ -6,18 +6,15 @@ import "./ICO.sol";
 
 contract SpaceCoin is ERC20 {
 
-    bool public tax;
-    address public immutable owner;
     address public immutable treasury;
+    address public immutable owner;
     address payable public immutable ico;
-    uint constant maxSupply = 500000 * (10 ** 18);
-    uint public supply;
-    mapping(address => uint256) public balances;
+    bool public taxEnabled;
 
-    modifier onlyOwner {
-        require(msg.sender == owner, "NOT_OWNER");
-        _;
-    }
+    event TaxToggled(bool indexed enabled);
+
+    error OnlyOwner(address sender, address owner);
+    error NoChangeInTax();
 
     /// @notice Mint tokens to the ICO and treasury
     /// @param _owner The owner of the contract
@@ -30,31 +27,29 @@ contract SpaceCoin is ERC20 {
         _mint(treasury, 350_000 * 10 ** decimals());
     }
 
-    /**
-     * @dev Mints more tokens; only the owner can do this
-     */
-    function increaseSupply(uint amount) external onlyOwner {
-        _mint(msg.sender, amount);
+    /// @notice Enables or disables the tax
+    /// @dev Only the owner of the contract can call this function
+    function toggleTax(bool _shouldTax) external {
+        if (msg.sender != owner) {
+            revert OnlyOwner(msg.sender, owner);
+        }
+        if (_shouldTax == taxEnabled) {
+            revert NoChangeInTax();
+        }
+        taxEnabled = !taxEnabled;
+        emit TaxToggled(taxEnabled);
     }
 
-    /**
-     * @dev Returns the amount of SpaceCoin tokens in existence.
-     */
-    function totalSupply() public view override returns (uint256) {
-        return supply;
-    }
-
-    /**
-     * @dev Returns the amount of SpaceCoin tokens owned by `account`.
-     */
-    function balanceOf(address account) public view virtual override returns (uint256) {
-        return balances[account];
-    }
-
-    /**
-     * @dev Owner sets the 2% tax on every transfer on or off
-     */
-    function setTax(bool control) external onlyOwner {
-        tax = control;
+    /// @notice If the tax is enabled, 2% of the amount is sent to the treasury
+    /// @param from The address to transfer from
+    /// @param to The address to transfer to
+    /// @param value The amount to transfer
+    function _update(address from, address to, uint256 value) internal virtual override {
+        if (taxEnabled) {
+            uint256 taxAmount = value / 50;
+            value -= taxAmount;
+            super._update(from, treasury, taxAmount);
+        }
+        super._update(from, to, value);
     }
 }
