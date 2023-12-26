@@ -113,6 +113,46 @@ describe('ICO', function () {
     expect(await ico.allowList(addr12)).to.equal(false);
   });
 
+  describe('Phases', function () {
+    it('Seed Phase is Default', async function () {
+      expect(await ico.phase()).to.equal(0);
+    });
+    it('Seed -> General', async function () {
+      await ico.advancePhase(0);
+      expect(await ico.phase()).to.equal(1);
+    });
+    it('General -> Open', async function () {
+      await ico.advancePhase(0);
+      await ico.advancePhase(1);
+      expect(await ico.phase()).to.equal(2);
+    });
+
+    it('Only the owner can advance', async function () {
+      await expect(ico.connect(addr1).advancePhase(0))
+        .to.be.revertedWithCustomError(ico, 'OnlyOwner')
+        .withArgs(addr1.address, owner.address);
+    });
+
+    it('Cannot advance if owner specifies wrong current phase', async function () {
+      await expect(ico.advancePhase(1)).to.be.revertedWithCustomError(
+        ico,
+        'CannotAdvance'
+      );
+    });
+
+    it('Cannot advance in open phase', async function () {
+      await ico.advancePhase(0);
+      await ico.advancePhase(1);
+      await expect(ico.advancePhase(2)).to.be.reverted;
+    });
+
+    it('Phase advanced event is emitted', async function () {
+      const txResponse = await ico.advancePhase(0);
+      const tx = await txResponse.wait();
+      await expect(tx).to.emit(ico, 'PhaseAdvanced').withArgs(1);
+    });
+  });
+
   describe('Contributing in Seed phase', function () {
     it('User not on allowlist cannot contribute', async function () {
       await expect(ico.connect(addr12).contribute({ value: tokens('1') }))
