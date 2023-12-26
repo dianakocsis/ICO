@@ -1,9 +1,10 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./SpaceCoin.sol";
 
+/// @title ICO contract
 contract ICO {
 
     enum Phase {
@@ -17,19 +18,16 @@ contract ICO {
     uint256 public constant MAX_TOTAL_SEED_LIMIT = 15000 ether;
     uint256 public constant MAX_INDIVIDUAL_GENERAL_LIMIT = 1000 ether;
     uint256 public constant MAX_CONTRIBUTION = 30000 ether;
-    Phase public phase;
-    IERC20 public spcToken;
-    bool public paused;
-    address public owner;
-    address public spcOwner;
-    mapping(address=>bool) whitelist; 
-    mapping(address => bool) public allowList;
-    mapping(address => uint256) public contributions;
-    uint public total;
     IERC20 public immutable spaceCoin;
+    address public immutable owner;
+    Phase public phase;
     uint256 public totalContribution;
+    mapping(address => uint256) public contributions;
+    mapping(address => bool) public allowList;
+    bool public paused;
 
     event Contributed(address indexed contributor, uint256 indexed amount);
+    event Redeemed(address indexed redeemer, uint256 indexed amount);
     event PhaseAdvanced(Phase indexed newPhase);
     event Paused();
     event Unpaused();
@@ -40,7 +38,6 @@ contract ICO {
     error AlreadyPaused();
     error CannotRedeem(Phase currentPhase, Phase expectedPhase);
     error CannotAdvance();
-    event Redeemed(address indexed redeemer, uint256 indexed amount);
     error NoContributions();
     error FailedToTransferSpace();
 
@@ -161,5 +158,4 @@ contract ICO {
     function min(uint256 _a, uint256 _b) internal pure returns (uint256) {
         return _a < _b ? _a : _b;
     }
-
 }
