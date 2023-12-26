@@ -284,4 +284,114 @@ describe('ICO', function () {
         .withArgs(addr10.address, tokens('1500'));
     });
   });
+
+  describe('Pausing and Unpausing', function () {
+    it('Default is not paused', async function () {
+      expect(await ico.paused()).to.be.equal(false);
+    });
+
+    it('Owner can pause', async function () {
+      await ico.pause();
+      expect(await ico.paused()).to.be.equal(true);
+    });
+
+    it('Owner can unpause', async function () {
+      await ico.pause();
+      await ico.unpause();
+      expect(await ico.paused()).to.be.equal(false);
+    });
+
+    it('Only owner can pause', async function () {
+      await expect(ico.connect(addr1).pause())
+        .to.be.revertedWithCustomError(ico, 'OnlyOwner')
+        .withArgs(addr1.address, owner.address);
+    });
+
+    it('Only owner can unpause', async function () {
+      await ico.pause();
+      await expect(ico.connect(addr1).unpause())
+        .to.be.revertedWithCustomError(ico, 'OnlyOwner')
+        .withArgs(addr1.address, owner.address);
+    });
+
+    it('Cannot contribute if paused', async function () {
+      await ico.pause();
+      await expect(
+        ico.connect(addr1).contribute({ value: tokens('1') })
+      ).to.be.revertedWithCustomError(ico, 'AlreadyPaused');
+    });
+
+    it('Cannot redeem if paused', async function () {
+      await ico.pause();
+      await expect(ico.connect(addr1).redeem()).to.be.revertedWithCustomError(
+        ico,
+        'AlreadyPaused'
+      );
+    });
+
+    it('Cannot pause if already paused', async function () {
+      await ico.pause();
+      await expect(ico.pause()).to.be.revertedWithCustomError(
+        ico,
+        'AlreadyPaused'
+      );
+    });
+
+    it('Cannot unpause if aleady not paused', async function () {
+      await expect(ico.unpause()).to.be.revertedWithCustomError(
+        ico,
+        'AlreadyUnpaused'
+      );
+    });
+
+    it('Paused event is emitted', async function () {
+      const txResponse = await ico.pause();
+      const tx = await txResponse.wait();
+      await expect(tx).to.emit(ico, 'Paused');
+    });
+
+    it('Unpaused event is emitted', async function () {
+      await ico.pause();
+      const txResponse = await ico.unpause();
+      const tx = await txResponse.wait();
+      await expect(tx).to.emit(ico, 'Unpaused');
+    });
+  });
+
+  describe('Redeeming', function () {
+    it('Can only redeem in open phase', async function () {
+      await expect(ico.redeem())
+        .to.be.revertedWithCustomError(ico, 'CannotRedeem')
+        .withArgs(await ico.phase(), 2);
+    });
+
+    it('Redeem 5 times the amount of space coins than ether contributed', async function () {
+      await ico.connect(addr11).contribute({ value: tokens('1500') });
+      await ico.advancePhase(0);
+      await ico.advancePhase(1);
+      expect(await spaceCoin.balanceOf(addr11)).to.be.equal(0);
+      await ico.connect(addr11).redeem();
+      expect(await spaceCoin.balanceOf(addr11)).to.be.equal(tokens('7500'));
+    });
+
+    it('Cannot redeem if no contributions', async function () {
+      await ico.advancePhase(0);
+      await ico.advancePhase(1);
+      await expect(ico.redeem()).to.be.revertedWithCustomError(
+        ico,
+        'NoContributions'
+      );
+    });
+
+    it('Redeemed event is emitted', async function () {
+      await ico.connect(addr11).contribute({ value: tokens('1500') });
+      await ico.advancePhase(0);
+      await ico.advancePhase(1);
+      const txResponse = await ico.connect(addr11).redeem();
+      const tx = await txResponse.wait();
+      await expect(tx)
+        .to.emit(ico, 'Redeemed')
+        .withArgs(addr11.address, tokens('1500') * BigInt(5));
+    });
+  });
 });
