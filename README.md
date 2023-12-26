@@ -44,5 +44,20 @@ The ICO should have:
   &nbsp;
 
 - An allowlist for contributors in the SEED phase:
+
   - Should be set once in the constructor
   - Should not allow existing allowlisted addresses to be removed
+
+  &nbsp;
+
+## Code Coverage Report
+
+----------------|----------|----------|----------|----------|----------------|
+File | % Stmts | % Branch | % Funcs | % Lines |Uncovered Lines |
+----------------|----------|----------|----------|----------|----------------|
+contracts/ | 100 | 97.83 | 100 | 98.41 | |
+ICO.sol | 100 | 97.5 | 100 | 97.87 | 95 |
+SpaceCoin.sol | 100 | 100 | 100 | 100 | |
+----------------|----------|----------|----------|----------|----------------|
+All files | 100 | 97.83 | 100 | 98.41 | |
+----------------|----------|----------|----------|----------|----------------|
