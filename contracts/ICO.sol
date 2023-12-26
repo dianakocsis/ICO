@@ -99,59 +99,6 @@ contract ICO {
         }
     }
 
-    /** @dev 
-     * Requirements:
-     *
-     *   Contributor is on the whitelist
-     *   Contribution is not over the contributor's limit.
-     *   Contribution is not over the total limit in the seed phase.
-     */
-    function seed() internal {
-        require(whitelist[msg.sender], "NOT_ON_WHITELIST");
-        require(contributions[msg.sender] + msg.value <= 1500 ether, "MAX_IND_CONTRIBUTION");
-        require(total + msg.value <= 15000 ether, "MAX_TOTAL_CONTRIBUTION");
-    }
-
-    /** @dev Checks to see if contribution can be accepted in general phase.
-     *
-     * Requirements:
-     *
-     *   Contribution is not over the contributor's limit.
-     *   Contribution is not over the total limit in the seed phase.
-     */
-    function general() internal {
-        require(contributions[msg.sender] + msg.value <= 1000 ether, "MAX_IND_CONTRIBUTION");
-        require(total + msg.value <= 30000 ether, "MAX_TOTAL_CONTRIBUTION");
-    }
-
-    /** @dev Releases 5 tokens to 1 Ether to the contributor
-     */
-    function open() internal {
-        require(total + msg.value <= 30000 ether, "MAX_TOTAL_CONTRIBUTION");
-        uint tokenAmt = 5 * msg.value;
-        spcToken.transferFrom(owner, msg.sender, tokenAmt);
-    }
-
-    /** @dev Releases 5 tokens to 1 Ether to all the contributors
-     */
-    function withdraw() external {
-        require(contributions[msg.sender] > 0);
-        require(phase == Phase.OPEN, "NOT READY");
-        spcToken.transferFrom(owner, msg.sender, 5 * contributions[msg.sender]);
-        contributions[msg.sender] = 0;
-    }
-
-    /** @dev Owner can change the phase of the contract.
-     *
-     * Requirements:
-     *
-     *   Owner can only move the phase forward.
-     */
-    function changePhase(Phase _phase) external onlyOwner {
-        require(_phase > phase, "MOVE_FORWARD");
-        phase = _phase;
-    }
-
     /// @notice Advances the phase
     /// @param _current The current phase
     /// @dev The phase can only be advanced if the sender is the owner
