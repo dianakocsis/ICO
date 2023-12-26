@@ -22,10 +22,7 @@ contract ICO {
     uint public total;
     IERC20 public immutable spaceCoin;
 
-    modifier onlyOwner {
-        require(msg.sender == owner, "NOT_OWNER");
-        _;
-    }
+    error OnlyOwner(address sender, address owner);
 
     /// @param _owner The owner of the contract
     /// @param _allowList The list of addresses allowed to contribute
@@ -35,6 +32,14 @@ contract ICO {
         for (uint i = 0; i < _allowList.length; i++) {
             allowList[_allowList[i]] = true;
         }
+    }
+
+    /// @dev Modifier to check if the sender is the owner
+    modifier onlyOwner() {
+        if (msg.sender != owner) {
+            revert OnlyOwner(msg.sender, owner);
+        }
+        _;
     }
 
     /** @dev Checks the phase state and adds the contribution to the specific contributor and total 
