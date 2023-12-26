@@ -11,6 +11,8 @@ contract ICO {
         GENERAL,
         OPEN
     }
+
+    uint256 public constant EXCHANGE_RATE = 5;
     uint256 public constant MAX_INDIVIDUAL_SEED_LIMIT = 1500 ether;
     uint256 public constant MAX_TOTAL_SEED_LIMIT = 15000 ether;
     uint256 public constant MAX_INDIVIDUAL_GENERAL_LIMIT = 1000 ether;
@@ -30,11 +32,17 @@ contract ICO {
     event Contributed(address indexed contributor, uint256 indexed amount);
     event PhaseAdvanced(Phase indexed newPhase);
     event Paused();
+    event Unpaused();
 
     error OnlyOwner(address sender, address owner);
     error CannotContribute(uint256 amount, uint256 limit);
+    error AlreadyUnpaused();
     error AlreadyPaused();
+    error CannotRedeem(Phase currentPhase, Phase expectedPhase);
     error CannotAdvance();
+    event Redeemed(address indexed redeemer, uint256 indexed amount);
+    error NoContributions();
+    error FailedToTransferSpace();
 
     /// @param _owner The owner of the contract
     /// @param _allowList The list of addresses allowed to contribute
@@ -71,6 +79,24 @@ contract ICO {
         contributions[msg.sender] += msg.value;
         totalContribution += msg.value;
         emit Contributed(msg.sender, msg.value);
+    }
+
+    /// @notice Redeems the tokens
+    /// @dev The tokens can only be redeemed if the contract is not paused and the phase is open
+    function redeem() external notPaused {
+        if (phase != Phase.OPEN) {
+            revert CannotRedeem(phase, Phase.OPEN);
+        }
+        if (contributions[msg.sender] == 0) {
+            revert NoContributions();
+        }
+        uint256 redeemed = contributions[msg.sender] * EXCHANGE_RATE;
+        contributions[msg.sender] = 0;
+        emit Redeemed(msg.sender, redeemed);
+        bool success = spaceCoin.transfer(msg.sender, redeemed);
+        if (!success) {
+            revert FailedToTransferSpace();
+        }
     }
 
     /** @dev 
@@ -142,6 +168,16 @@ contract ICO {
     function pause() external onlyOwner notPaused {
         paused = true;
         emit Paused();
+    }
+
+    /// @notice Unpauses the contract
+    /// @dev The contract can only be unpaused if it is already paused
+    function unpause() external onlyOwner {
+        if (!paused) {
+            revert AlreadyUnpaused();
+        }
+        paused = false;
+        emit Unpaused();
     }
 
     /// @notice Returns the amount available to contribute for a user
