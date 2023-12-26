@@ -41,6 +41,8 @@ describe('ICO', function () {
     addr25: SignerWithAddress,
     addr26: SignerWithAddress;
 
+  const tokens = (count: string) => ethers.parseUnits(count, 18);
+
   this.beforeEach(async function () {
     [
       owner,
@@ -109,5 +111,177 @@ describe('ICO', function () {
     expect(await ico.allowList(addr10)).to.equal(true);
     expect(await ico.allowList(addr11)).to.equal(true);
     expect(await ico.allowList(addr12)).to.equal(false);
+  });
+
+  describe('Contributing in Seed phase', function () {
+    it('User not on allowlist cannot contribute', async function () {
+      await expect(ico.connect(addr12).contribute({ value: tokens('1') }))
+        .to.be.revertedWithCustomError(ico, 'CannotContribute')
+        .withArgs(tokens('1'), 0);
+    });
+
+    it('Cannot go over individual contribution limit', async function () {
+      await expect(ico.connect(addr1).contribute({ value: tokens('1501') }))
+        .to.be.revertedWithCustomError(ico, 'CannotContribute')
+        .withArgs(tokens('1501'), await ico.MAX_INDIVIDUAL_SEED_LIMIT());
+    });
+
+    it('Cannot go over total contribution limit', async function () {
+      await ico.connect(addr1).contribute({ value: tokens('1500') });
+      await ico.connect(addr2).contribute({ value: tokens('1500') });
+      await ico.connect(addr3).contribute({ value: tokens('1500') });
+      await ico.connect(addr4).contribute({ value: tokens('1500') });
+      await ico.connect(addr5).contribute({ value: tokens('1500') });
+      await ico.connect(addr6).contribute({ value: tokens('1500') });
+      await ico.connect(addr7).contribute({ value: tokens('1500') });
+      await ico.connect(addr8).contribute({ value: tokens('1500') });
+      await ico.connect(addr9).contribute({ value: tokens('1500') });
+      await ico.connect(addr10).contribute({ value: tokens('1500') });
+      await expect(ico.connect(addr11).contribute({ value: tokens('1') }))
+        .to.be.revertedWithCustomError(ico, 'CannotContribute')
+        .withArgs(tokens('1'), 0);
+    });
+
+    it('Udpates contributions and total contributions', async function () {
+      await ico.connect(addr1).contribute({ value: tokens('1500') });
+      expect(await ico.contributions(addr1)).to.equal(tokens('1500'));
+      expect(await ico.totalContribution()).to.equal(tokens('1500'));
+    });
+
+    it('Contributed event is emitted', async function () {
+      const txResponse = await ico
+        .connect(addr10)
+        .contribute({ value: tokens('1500') });
+      const tx = await txResponse.wait();
+      await expect(tx)
+        .to.emit(ico, 'Contributed')
+        .withArgs(addr10.address, tokens('1500'));
+    });
+  });
+
+  describe('Contributing in General phase', function () {
+    it('User not on allowlist can contribute', async function () {
+      await ico.connect(owner).advancePhase(await ico.phase());
+      await ico.connect(addr12).contribute({ value: tokens('1') });
+      expect(await ico.contributions(addr12)).to.equal(tokens('1'));
+      expect(await ico.totalContribution()).to.equal(tokens('1'));
+    });
+
+    it('Cannot go over individual contribution limit', async function () {
+      await ico.connect(owner).advancePhase(await ico.phase());
+      await expect(ico.connect(addr1).contribute({ value: tokens('1001') }))
+        .to.be.revertedWithCustomError(ico, 'CannotContribute')
+        .withArgs(tokens('1001'), tokens('1000'));
+    });
+
+    it('Individual contribution limit is inclusive of seed phase', async function () {
+      await ico.connect(addr1).contribute({ value: tokens('1500') });
+      await ico.connect(owner).advancePhase(await ico.phase());
+      await expect(ico.connect(addr1).contribute({ value: tokens('1000') }))
+        .to.be.revertedWithCustomError(ico, 'CannotContribute')
+        .withArgs(tokens('1000'), 0);
+    });
+
+    it('Cannot go over total contribution limit', async function () {
+      await ico.connect(addr1).contribute({ value: tokens('1500') });
+      await ico.connect(addr2).contribute({ value: tokens('1500') });
+      await ico.connect(addr3).contribute({ value: tokens('1500') });
+      await ico.connect(addr4).contribute({ value: tokens('1500') });
+      await ico.connect(addr5).contribute({ value: tokens('1500') });
+      await ico.connect(addr6).contribute({ value: tokens('1500') });
+      await ico.connect(addr7).contribute({ value: tokens('1500') });
+      await ico.connect(addr8).contribute({ value: tokens('1500') });
+      await ico.connect(addr9).contribute({ value: tokens('1500') });
+      await ico.connect(addr10).contribute({ value: tokens('1500') });
+      await ico.connect(owner).advancePhase(await ico.phase());
+      await ico.connect(addr11).contribute({ value: tokens('1000') });
+      await ico.connect(addr12).contribute({ value: tokens('1000') });
+      await ico.connect(addr13).contribute({ value: tokens('1000') });
+      await ico.connect(addr14).contribute({ value: tokens('1000') });
+      await ico.connect(addr15).contribute({ value: tokens('1000') });
+      await ico.connect(addr16).contribute({ value: tokens('1000') });
+      await ico.connect(addr17).contribute({ value: tokens('1000') });
+      await ico.connect(addr18).contribute({ value: tokens('1000') });
+      await ico.connect(addr19).contribute({ value: tokens('1000') });
+      await ico.connect(addr20).contribute({ value: tokens('1000') });
+      await ico.connect(addr21).contribute({ value: tokens('1000') });
+      await ico.connect(addr22).contribute({ value: tokens('1000') });
+      await ico.connect(addr23).contribute({ value: tokens('1000') });
+      await ico.connect(addr24).contribute({ value: tokens('1000') });
+      await ico.connect(addr25).contribute({ value: tokens('1000') });
+      await expect(ico.connect(addr26).contribute({ value: tokens('1') }))
+        .to.be.revertedWithCustomError(ico, 'CannotContribute')
+        .withArgs(tokens('1'), 0);
+    });
+
+    it('Udpates contributions and total contributions', async function () {
+      await ico.connect(owner).advancePhase(await ico.phase());
+      await ico.connect(addr1).contribute({ value: tokens('1000') });
+      expect(await ico.contributions(addr1)).to.equal(tokens('1000'));
+      expect(await ico.totalContribution()).to.equal(tokens('1000'));
+    });
+
+    it('Contributed event is emitted', async function () {
+      const txResponse = await ico
+        .connect(addr10)
+        .contribute({ value: tokens('1500') });
+      const tx = await txResponse.wait();
+      await expect(tx)
+        .to.emit(ico, 'Contributed')
+        .withArgs(addr10.address, tokens('1500'));
+    });
+  });
+
+  describe('Contributing in Open phase', function () {
+    it('User not on allowlist can contribute', async function () {
+      await ico.connect(owner).advancePhase(await ico.phase());
+      await ico.connect(owner).advancePhase(await ico.phase());
+      await ico.connect(addr12).contribute({ value: tokens('2000') });
+      expect(await ico.contributions(addr12)).to.equal(tokens('2000'));
+      expect(await ico.totalContribution()).to.equal(tokens('2000'));
+    });
+
+    it('Cannot go over total contribution limit', async function () {
+      await ico.connect(addr1).contribute({ value: tokens('1500') });
+      await ico.connect(addr2).contribute({ value: tokens('1500') });
+      await ico.connect(addr3).contribute({ value: tokens('1500') });
+      await ico.connect(addr4).contribute({ value: tokens('1500') });
+      await ico.connect(addr5).contribute({ value: tokens('1500') });
+      await ico.connect(addr6).contribute({ value: tokens('1500') });
+      await ico.connect(addr7).contribute({ value: tokens('1500') });
+      await ico.connect(addr8).contribute({ value: tokens('1500') });
+      await ico.connect(addr9).contribute({ value: tokens('1500') });
+      await ico.connect(addr10).contribute({ value: tokens('1500') });
+      await ico.connect(owner).advancePhase(await ico.phase());
+      await ico.connect(owner).advancePhase(await ico.phase());
+      await ico.connect(addr11).contribute({ value: tokens('1000') });
+      await ico.connect(addr12).contribute({ value: tokens('1000') });
+      await ico.connect(addr13).contribute({ value: tokens('1000') });
+      await ico.connect(addr14).contribute({ value: tokens('1000') });
+      await ico.connect(addr15).contribute({ value: tokens('1000') });
+      await ico.connect(addr16).contribute({ value: tokens('1000') });
+      await ico.connect(addr17).contribute({ value: tokens('1000') });
+      await ico.connect(addr18).contribute({ value: tokens('1000') });
+      await ico.connect(addr19).contribute({ value: tokens('1000') });
+      await ico.connect(addr20).contribute({ value: tokens('1000') });
+      await ico.connect(addr21).contribute({ value: tokens('1000') });
+      await ico.connect(addr22).contribute({ value: tokens('1000') });
+      await ico.connect(addr23).contribute({ value: tokens('1000') });
+      await ico.connect(addr24).contribute({ value: tokens('1000') });
+      await ico.connect(addr25).contribute({ value: tokens('1000') });
+      await expect(ico.connect(addr26).contribute({ value: tokens('1') }))
+        .to.be.revertedWithCustomError(ico, 'CannotContribute')
+        .withArgs(tokens('1'), 0);
+    });
+
+    it('Contributed event is emitted', async function () {
+      const txResponse = await ico
+        .connect(addr10)
+        .contribute({ value: tokens('1500') });
+      const tx = await txResponse.wait();
+      await expect(tx)
+        .to.emit(ico, 'Contributed')
+        .withArgs(addr10.address, tokens('1500'));
+    });
   });
 });
