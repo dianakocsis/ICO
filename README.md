@@ -61,3 +61,12 @@ SpaceCoin.sol | 100 | 100 | 100 | 100 | |
 ----------------|----------|----------|----------|----------|----------------|
 All files | 100 | 97.83 | 100 | 98.41 | |
 ----------------|----------|----------|----------|----------|----------------|
+
+&nbsp;
+
+## Testnet Deploy Information
+
+| Contract  | Address Etherscan Link                                                                 |
+| --------- | -------------------------------------------------------------------------------------- |
+| SpaceCoin | `https://sepolia.etherscan.io/address/0x5cfeaadd66ec6650f909ee99cedd7105f7708d7d#code` |
+| ICO       | `https://sepolia.etherscan.io/address/0x248357Cf7c32121854f024831470ac8a140fc331#code` |
