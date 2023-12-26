@@ -7,10 +7,14 @@ import "./SpaceCoin.sol";
 contract ICO {
 
     enum Phase {
-        Seed,
-        General,
-        Open
+        SEED,
+        GENERAL,
+        OPEN
     }
+    uint256 public constant MAX_INDIVIDUAL_SEED_LIMIT = 1500 ether;
+    uint256 public constant MAX_TOTAL_SEED_LIMIT = 15000 ether;
+    uint256 public constant MAX_INDIVIDUAL_GENERAL_LIMIT = 1000 ether;
+    uint256 public constant MAX_CONTRIBUTION = 30000 ether;
     Phase public phase;
     IERC20 public spcToken;
     bool public paused;
@@ -18,11 +22,19 @@ contract ICO {
     address public spcOwner;
     mapping(address=>bool) whitelist; 
     mapping(address => bool) public allowList;
-    mapping(address=>uint) contributions;
+    mapping(address => uint256) public contributions;
     uint public total;
     IERC20 public immutable spaceCoin;
+    uint256 public totalContribution;
+
+    event Contributed(address indexed contributor, uint256 indexed amount);
+    event PhaseAdvanced(Phase indexed newPhase);
+    event Paused();
 
     error OnlyOwner(address sender, address owner);
+    error CannotContribute(uint256 amount, uint256 limit);
+    error AlreadyPaused();
+    error CannotAdvance();
 
     /// @param _owner The owner of the contract
     /// @param _allowList The list of addresses allowed to contribute
@@ -42,28 +54,23 @@ contract ICO {
         _;
     }
 
-    /** @dev Checks the phase state and adds the contribution to the specific contributor and total 
-     *        amount. Adds the contributor to the array if not already on it
-     *
-     * Requirements:
-     *    Fundraising is not paused
-     *
-     */
-    function contribute() external payable {
-        require(!paused, "PAUSED");
+    /// @dev Modifier to check if the contract is paused
+    modifier notPaused() {
+        if (paused) {
+            revert AlreadyPaused();
+        }
+        _;
+    }
 
-        if (phase == Phase.Seed) {
-            seed();
+    /// @notice Contributes to the ICO
+    /// @dev The contribution is only allowed if the contract is not paused
+    function contribute() external payable notPaused {
+        if (msg.value > availableToContribute(msg.sender)) {
+            revert CannotContribute(msg.value, availableToContribute(msg.sender));
         }
-        else if (phase == Phase.General) {
-            general();
-        }
-        else {
-            open();
-        }
-
         contributions[msg.sender] += msg.value;
-        total += msg.value;
+        totalContribution += msg.value;
+        emit Contributed(msg.sender, msg.value);
     }
 
     /** @dev 
@@ -103,7 +110,7 @@ contract ICO {
      */
     function withdraw() external {
         require(contributions[msg.sender] > 0);
-        require(phase == Phase.Open, "NOT READY");
+        require(phase == Phase.OPEN, "NOT READY");
         spcToken.transferFrom(owner, msg.sender, 5 * contributions[msg.sender]);
         contributions[msg.sender] = 0;
     }
@@ -119,11 +126,57 @@ contract ICO {
         phase = _phase;
     }
 
-    /**
-     * @dev Owner can pause fundraising
-     */
-    function pause(bool _paused) external onlyOwner {
-        paused = _paused;
+    /// @notice Advances the phase
+    /// @param _current The current phase
+    /// @dev The phase can only be advanced if the sender is the owner
+    function advancePhase(Phase _current) external onlyOwner {
+        if (phase != _current) {
+            revert CannotAdvance();
+        }
+        phase = Phase(uint8(_current) + 1);
+        emit PhaseAdvanced(phase);
+    }
+
+    /// @notice Pauses the contract
+    /// @dev The contract can only be paused if it is not already paused
+    function pause() external onlyOwner notPaused {
+        paused = true;
+        emit Paused();
+    }
+
+    /// @notice Returns the amount available to contribute for a user
+    /// @param _user The user to check
+    /// @return The amount available to contribute
+    function availableToContribute(address _user) public view returns (uint256) {
+        if (phase == Phase.SEED) {
+            if (!allowList[_user]) {
+                return 0;
+            }
+            return min(MAX_INDIVIDUAL_SEED_LIMIT - contributions[_user], fundingCapacity());
+        } else if (phase == Phase.GENERAL) {
+            if (contributions[_user] < MAX_INDIVIDUAL_GENERAL_LIMIT) {
+                return min(MAX_INDIVIDUAL_GENERAL_LIMIT - contributions[_user], fundingCapacity());
+            }
+            return 0;
+        } else {
+            return fundingCapacity();
+        }
+    }
+
+    /// @notice Returns the amount of funding capacity left
+    /// @return The amount of funding capacity left
+    function fundingCapacity() public view returns (uint256) {
+        if (phase == Phase.SEED) {
+            return MAX_TOTAL_SEED_LIMIT - totalContribution;
+        }
+        return MAX_CONTRIBUTION - totalContribution;
+    }
+
+    /// @notice Returns the minimum of two numbers
+    /// @param _a The first number
+    /// @param _b The second number
+    function min(uint256 _a, uint256 _b) internal pure returns (uint256) {
+        return _a < _b ? _a : _b;
     }
 
 }
